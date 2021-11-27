@@ -1,0 +1,104 @@
+#### Bildr Development Notes 
+
+How to set Input and Output Arguments: 
+
+    INPUT_ARGUMENTS.<value> - use this to get function inputs
+    RESPONSE_OBJECT.OUTPUT_ARGUMENTS.<value> - use this to assign a function output 
+
+    
+
+
+    CURRENT_BROWSER_FORM - No idea
+
+    Set page variable using js
+
+
+    var targetPage = INPUT_ARGUMENTS.targetPage?INPUT_ARGUMENTS.targetPage:"current";
+    if (INPUT_ARGUMENTS.useBrwFormRoot) {targetPage ="root";}
+    bapi.helper.setPageVariable(targetPage, INPUT_ARGUMENTS.variableName, INPUT_ARGUMENTS.value, CURRENT_BROWSER_FORM, INPUT_ARGUMENTS.mapObjectKeys);
+
+
+    Bildr API Call with Params: 
+    if (!INPUT_ARGUMENTS.url) {
+        RESPONSE_OBJECT.STATUS = 'fail';
+        RESPONSE_OBJECT.MESSAGE = 'no url';
+    }
+
+    // this is Bildr's url, not the user-filled url
+    var url = INPUT_ARGUMENTS.url;
+
+    var xhttp;
+    xhttp = new XMLHttpRequest();
+    var method = (INPUT_ARGUMENTS.method && (" GET POST PUT DELETE PATCH ").indexOf(" " + INPUT_ARGUMENTS.method + " ") >= 0) ? INPUT_ARGUMENTS.method : 'GET';
+    xhttp.open(method, url);
+    if (INPUT_ARGUMENTS.headers) {
+        var oHeaders = INPUT_ARGUMENTS.headers;
+        if (oHeaders) {
+            for (var key in oHeaders) {
+                if (oHeaders.hasOwnProperty(key)) {
+                    xhttp.setRequestHeader(key, oHeaders[key]);
+                }
+            }
+        }
+    }
+    xhttp.onreadystatechange = function () {
+        if (xhttp.readyState == XMLHttpRequest.DONE && xhttp.status == 200) {
+            //console.log(xhttp.responseText);
+            RESPONSE_OBJECT.OUTPUT_ARGUMENTS.httpStatus= xhttp.status;
+
+            RESPONSE_OBJECT.OUTPUT_ARGUMENTS.response =xhttp.responseText;
+            try{var data = JSON.parse(xhttp.responseText);
+                if (bapi.helper.isString(data)) data= JSON.parse(data);
+        
+                RESPONSE_OBJECT.OUTPUT_ARGUMENTS.response=data.response;
+                RESPONSE_OBJECT.OUTPUT_ARGUMENTS.content=data.content;
+                RESPONSE_OBJECT.OUTPUT_ARGUMENTS.statusCode=data.statusCode;
+                RESPONSE_OBJECT.OUTPUT_ARGUMENTS.statusCodeSlice=data.statusCode.toString()[0];
+            }catch(e){}
+            
+            QueueExecNextActions(QUEUE_ACTION);
+            
+        }
+    };
+
+    // content is the actual user-filled info (url, headers, content, etc.)
+    var content = INPUT_ARGUMENTS.content;
+    content = JSON.parse(content);
+
+    // add url parameters to url value
+    if (INPUT_ARGUMENTS.params) {
+        var params = JSON.parse(INPUT_ARGUMENTS.params);
+        for (var key in params) {
+            content.url += (content.url.indexOf("?") >= 0) ? "&" : "?"; // add & or ? to url param string
+            content.url += key + "=" + encodeURIComponent(params[key]); // add parameter
+        }
+    }
+
+    xhttp.send(JSON.stringify(content));
+
+
+
+
+
+
+
+
+    Magikarp:
+    responseStatus = xhttp.status;
+    responseText = xhttp.responseText
+    
+    console.log(`You just made an API Call, Status: ${responseStatus} Text: ${responseText}`);
+    
+    bapi.helper.setPageVariable(targetPage, 'responseText', responseText, CURRENT_BROWSER_FORM, INPUT_ARGUMENTS.mapObjectKeys);
+    bapi.helper.setPageVariable(targetPage, 'responseStatus', responseStatus, CURRENT_BROWSER_FORM, INPUT_ARGUMENTS.mapObjectKeys);
+
+
+    Look at air table functions, look at the JSON for how to add it in. 
+
+    In functions toggle QUEUE_ACTION toggle 
+
+    0.
+    example:
+    <varname>.0.name 
+
+    css code can be added in the header
